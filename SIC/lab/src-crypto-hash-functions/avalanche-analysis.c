@@ -108,7 +108,20 @@ void change_me_a_bit(const uint8_t *source, const uint32_t source_size,
 void change_me_a_byte(const uint8_t *source, const uint32_t source_size,
                       uint8_t *track_mods, uint8_t *working_buf)
 {
-    assert(1 == 0);
+    memcpy(working_buf, source, source_size);
+    
+    uint32_t byte_idx = rand() % source_size;
+    uint32_t try = 0;
+    
+    while (track_mods[byte_idx])
+    {
+        try++;
+
+        byte_idx = (byte_idx + 1) % source_size;
+    }
+    
+    working_buf[byte_idx] ^= 0xFF;
+    track_mods[byte_idx] = 1;
 }
 
 // Produces sha256 from `data` with `data_size` bytes and writes the output to `output_hash`
@@ -205,17 +218,14 @@ int main(int argc, char *argv[])
 
     EVP_Digest(source, source_size, source_hash, &size_of_hash, func_template, 0);
 
-    // TODO: add your code here
-    
-    // until here
-    change_me_a_bit(source, source_size, track_mods, bit_mod);
-    EVP_Digest(bit_mod, source_size, bit_mod_hash, &size_of_hash, func_template, 0);
+    for (uint32_t i = 0; i < n_variations; i++)
+    {
+        change_me_a_bit(source, source_size, track_mods, bit_mod);
+        EVP_Digest(bit_mod, source_size, bit_mod_hash, &size_of_hash, func_template, 0);
 
-    int n = count_diff_bits(source_hash, bit_mod_hash, size_of_hash);
-    histogram[n]++;
-    // TODO: add your code here
-
-    // until here
+        int n = count_diff_bits(source_hash, bit_mod_hash, size_of_hash);
+        histogram[n]++;
+    }
 
     // make sure we have used N different 1-bit modifications
     uint8_t *zeros = calloc(source_size, 1);
