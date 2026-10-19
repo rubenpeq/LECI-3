@@ -26,4 +26,4 @@ file_ed_ni: file_ed.o ecb.o cbc.o aes-ni.o
 
 clean:
 	-rm *.o
-	-rm aes128-test-modes aes128-test-modes-ni aes128-test-padding pbkdf2-kickoff
+	-rm aes128-test-modes aes128-test-modes-ni aes128-test-padding pbkdf2-kickoff file_ed file_ed_ni
