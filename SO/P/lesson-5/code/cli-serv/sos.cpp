@@ -38,6 +38,7 @@ struct BUFFER
     char req[MAX_STRING_LEN+1];         ///< The request recipient
     Response resp;                      ///< The response recipient
     bool thereIsResponse;               ///< condition stating the response is in place
+    pthread_mutex_t access;             ///< access mutex
     pthread_cond_t responseAvailable;   ///< condition variable to notify client the response is available
 };
 
@@ -57,41 +58,6 @@ struct Fifo
 
 /* -------------------------------------------------------------------- */
 
-/** \brief The fifo manipulation functions */
-
-/* Insert a token into a fifo */
-static void fifoIn(uint32_t semIndex, uint32_t token)
-{
-#if __DEBUG__
-    fprintf(stderr, "%s(semIndex: %u, token: %u)\n", __func__, semIndex, token);
-#endif
-
-    /* check preconditions */
-    require(semIndex == FREE_BUFFER or semIndex == PENDING_REQUEST, "semIndex is not valid");
-    require(token < NBUFFERS, "Token is not valid");
-
-    /* replace this comment with your code */
-}
-
-/* -------------------------------------------------------------------- */
-
-/* Retrieve a token from a fifo  */
-static uint32_t fifoOut(uint32_t semIndex)
-{
-#if __DEBUG__
-    fprintf(stderr, "%s(semIndex: %u)\n", __func__, semIndex);
-#endif
-
-    /* check preconditions */
-    require(semIndex == FREE_BUFFER or semIndex == PENDING_REQUEST, "semIndex is not valid");
-
-    /* replace this comment and the following line with your code */
-    return 0xFFFFFFFF;
-}
-
-/* -------------------------------------------------------------------- */
-/* -------------------------------------------------------------------- */
-
 /** \brief the data type representing all the shared area.
  *    Fifo 0 is used to manage tokens of free buffers.
  *    Fifo 1 is used to manage tokens of pending requests.
@@ -103,26 +69,49 @@ struct SharedArea
 
     /* A fifo for tokens of free buffers and another for tokens with pending requests */
     Fifo fifo[2];
-
-    /* array of 2 semaphores to allow mutual exclusion in the access to the fifos */
-    int fifoAccess;
-
-    /* array of 2 semaphores to block process until the corresponding fifo is not empty
-     *    Control of fullness is not necessary because the capacity of the fifos is equal
-     *    to the number of buffers, so insertion in a full fifo will never occur.
-     */
-    int fifoNotEmpty;
-
-    /* array of N BUFFERS semaphores to block clients 
-     *    while waiting for the response to their requests.
-     */
-    int respAvailable;
 };
 
 /** \brief pointer to shared area dynamically allocated */
 SharedArea *sharedArea = NULL;
 
 
+/* -------------------------------------------------------------------- */
+
+/** \brief The fifo manipulation functions */
+
+/* Insert a token into a fifo */
+static void fifoIn(uint32_t fifoIndex, uint32_t token)
+{
+#if __DEBUG__
+    fprintf(stderr, "%s(fifoIndex: %u, token: %u)\n", __func__, fifoIndex, token);
+#endif
+
+    /* check preconditions */
+    require(fifoIndex == FREE_BUFFER or fifoIndex == PENDING_REQUEST, "fifoIndex is not valid");
+    require(token < NBUFFERS, "Token is not valid");
+    require(sharedArea != NULL && sharedArea->fifo[fifoIndex].cnt < NBUFFERS, "fifo full"); // concurrent condition!
+
+    /* replace this comment with your code */
+}
+
+/* -------------------------------------------------------------------- */
+
+/* Retrieve a token from a fifo  */
+static uint32_t fifoOut(uint32_t fifoIndex)
+{
+#if __DEBUG__
+    fprintf(stderr, "%s(fifoIndex: %u)\n", __func__, fifoIndex);
+#endif
+
+    /* check preconditions */
+    require(fifoIndex == FREE_BUFFER or fifoIndex == PENDING_REQUEST, "fifoIndex is not valid");
+    require(sharedArea != NULL && sharedArea->fifo[fifoIndex].cnt > 0, "fifo empty"); // concurrent condition!
+
+    /* replace this comment and the following line with your code */
+    return 0xFFFFFFFF;
+}
+
+/* -------------------------------------------------------------------- */
 /* -------------------------------------------------------------------- */
 
 /* Allocate and init the internal supporting data structure,
