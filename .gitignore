@@ -682,3 +682,6 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+
+# RSA keys
+*.pem
